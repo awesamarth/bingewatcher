@@ -364,18 +364,18 @@ export function ProgramWorkspace({ programId }: { programId: string }) {
     <main className="min-h-screen bg-[radial-gradient(circle_at_70%_-10%,rgba(227,38,31,.09),transparent_30%)]" aria-busy={busy}>
       {!readOnly && <WebMCPTools programId={programId} />}
       <SiteNav active="lineups" />
-      <div className="sticky top-20 z-30 mt-20 border-y border-[#363330d9] bg-[#0b0b0ae8] backdrop-blur-lg">
+      {!readOnly && <div className="sticky top-20 z-30 mt-20 border-y border-[#363330d9] bg-[#0b0b0ae8] backdrop-blur-lg">
         <div className="mx-auto flex min-h-13 max-w-290 items-center justify-between gap-4 px-5 sm:px-7.5">
           <Link href="/lineups" className="inline-flex items-center gap-2 text-xs text-muted hover:text-white"><ArrowLeft size={16} /> All lineups</Link>
           <div className="flex items-center gap-2">
             <button className={navButtonClass} onClick={() => setPanel(panel === "constraints" ? null : "constraints")}><ListFilter size={17} /><span className="hidden sm:inline">Preferences</span></button>
             <button className={navButtonClass} onClick={() => setPanel(panel === "history" ? null : "history")}><History size={17} /><span className="hidden sm:inline">History</span></button>
-            {!readOnly && <><button className={navButtonClass} onClick={share}><Share2 size={17} /><span className="hidden sm:inline">Share</span></button><button className={`${navButtonClass} text-[#d88983] hover:border-pulse hover:text-[#ff9b94]`} onClick={() => deleteDialog.current?.showModal()} aria-label="Delete lineup"><Trash2 size={16} /><span className="hidden sm:inline">Delete</span></button></>}
+            <button className={navButtonClass} onClick={share}><Share2 size={17} /><span className="hidden sm:inline">Share</span></button><button className={`${navButtonClass} text-[#d88983] hover:border-pulse hover:text-[#ff9b94]`} onClick={() => deleteDialog.current?.showModal()} aria-label="Delete lineup"><Trash2 size={16} /><span className="hidden sm:inline">Delete</span></button>
           </div>
         </div>
-      </div>
+      </div>}
 
-      <section className="mx-auto max-w-290 px-7.5 pt-10 pb-13 sm:pt-17">
+      <section className={`mx-auto max-w-290 px-7.5 pb-13 ${readOnly ? "pt-30 sm:pt-37" : "pt-10 sm:pt-17"}`}>
         <div className="grid grid-cols-1 items-end gap-7 sm:grid-cols-[1fr_auto] sm:gap-12">
           <div>
             <p className={eyebrowClass}>Lineup · {program.targetSize} picks</p>
