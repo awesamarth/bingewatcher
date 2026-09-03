@@ -80,10 +80,12 @@ function SortableMovie({
   onRemove,
   onVeto,
   onTrailer,
+  returnTo,
 }: {
   item: ProgramItem;
   index: number;
   readOnly: boolean;
+  returnTo: string;
   onAction: (input: Record<string, unknown>) => void;
   onReplace: () => void;
   onRemove: () => void;
@@ -93,7 +95,7 @@ function SortableMovie({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, disabled: readOnly });
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const description = item.overview;
-  const titleHref = `/title/${item.mediaType}/${item.tmdbId}${item.mediaType === "tv" && item.seasonNumber !== null ? `?season=${item.seasonNumber}` : ""}`;
+  const titleHref = `/title/${item.mediaType}/${item.tmdbId}?${item.mediaType === "tv" && item.seasonNumber !== null ? `season=${item.seasonNumber}&` : ""}from=${encodeURIComponent(returnTo)}`;
   const actionClass = "grid size-[31px] cursor-pointer place-items-center border border-white/15 bg-black/70 backdrop-blur transition hover:border-white/60 disabled:cursor-not-allowed disabled:opacity-30 md:size-[34px] [&_svg]:w-[15px]";
   return (
     <article
@@ -418,7 +420,7 @@ export function ProgramWorkspace({ programId }: { programId: string }) {
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
           <SortableContext items={program.items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
             {program.items.map((item, index) => (
-              <SortableMovie key={item.id} item={item} index={index} readOnly={readOnly} onAction={action} onReplace={() => openSearch(item)} onRemove={() => openRemove(item)} onVeto={() => openVeto(item)} onTrailer={() => { setTrailer(item); trailerDialog.current?.showModal(); }} />
+              <SortableMovie key={item.id} item={item} index={index} readOnly={readOnly} returnTo={`/program/${programId}`} onAction={action} onReplace={() => openSearch(item)} onRemove={() => openRemove(item)} onVeto={() => openVeto(item)} onTrailer={() => { setTrailer(item); trailerDialog.current?.showModal(); }} />
             ))}
           </SortableContext>
         </DndContext>

@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { WatchlistItem } from "@/lib/types";
 
 const key = (item: WatchlistItem) => `${item.mediaType}:${item.tmdbId}:${item.seasonNumber ?? "all"}`;
-const href = (item: WatchlistItem) => `/title/${item.mediaType}/${item.tmdbId}${item.mediaType === "tv" && item.seasonNumber !== null ? `?season=${item.seasonNumber}` : ""}`;
+const href = (item: WatchlistItem) => `/title/${item.mediaType}/${item.tmdbId}?${item.mediaType === "tv" && item.seasonNumber !== null ? `season=${item.seasonNumber}&` : ""}from=${encodeURIComponent("/watchlist")}`;
 
 export function WatchlistClient() {
   const [items, setItems] = useState<WatchlistItem[] | null>(null);

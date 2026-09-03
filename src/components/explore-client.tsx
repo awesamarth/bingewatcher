@@ -33,10 +33,10 @@ function closeOnBackdrop(event: MouseEvent<HTMLDialogElement>) {
   if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) event.currentTarget.close();
 }
 
-function MediaCard({ media, saved, onSave, onLineup }: { media: MediaSearchResult; saved: boolean; onSave: () => void; onLineup: () => void }) {
+function MediaCard({ media, saved, onSave, onLineup, returnTo }: { media: MediaSearchResult; saved: boolean; onSave: () => void; onLineup: () => void; returnTo: string }) {
   return (
     <article className="group relative min-w-0">
-      <Link className="block" href={`/title/${media.mediaType}/${media.tmdbId}`} aria-label={`View ${media.title}`}>
+      <Link className="block" href={`/title/${media.mediaType}/${media.tmdbId}?from=${encodeURIComponent(returnTo)}`} aria-label={`View ${media.title}`}>
         <div className="relative aspect-[2/3] overflow-hidden bg-[#191817]">
           {media.posterPath ? <Image className="object-cover transition duration-500 group-hover:scale-[1.035]" src={`https://image.tmdb.org/t/p/w500${media.posterPath}`} alt={`Poster for ${media.title}`} fill sizes="(max-width: 640px) 44vw, 220px" /> : <div className="grid h-full place-items-center text-faint">{media.mediaType === "tv" ? <Tv /> : <Film />}</div>}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
@@ -54,7 +54,7 @@ function MediaCard({ media, saved, onSave, onLineup }: { media: MediaSearchResul
   );
 }
 
-function Shelf({ title, eyebrow, items, saved, onSave, onLineup, moreUrl, infinite = false, totalPages = 1 }: { title: string; eyebrow: string; items: MediaSearchResult[]; saved: Set<string>; onSave: (media: MediaSearchResult) => void; onLineup: (media: MediaSearchResult) => void; moreUrl?: string; infinite?: boolean; totalPages?: number }) {
+function Shelf({ title, eyebrow, items, saved, onSave, onLineup, returnTo, moreUrl, infinite = false, totalPages = 1 }: { title: string; eyebrow: string; items: MediaSearchResult[]; saved: Set<string>; onSave: (media: MediaSearchResult) => void; onLineup: (media: MediaSearchResult) => void; returnTo: string; moreUrl?: string; infinite?: boolean; totalPages?: number }) {
   const [expanded, setExpanded] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
@@ -144,7 +144,7 @@ function Shelf({ title, eyebrow, items, saved, onSave, onLineup, moreUrl, infini
       </div>
       <div ref={collapseArea} className="overflow-hidden">
         <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-4 sm:gap-5 lg:grid-cols-6 xl:grid-cols-7">
-          {(infinite || expanded ? allItems : items.slice(0, 14)).map((media, index) => <div key={key(media)} ref={index === 14 ? moreStart : index === Math.min(13, items.length - 1) ? collapsedEnd : undefined}><MediaCard media={media} saved={saved.has(key(media))} onSave={() => onSave(media)} onLineup={() => onLineup(media)} /></div>)}
+          {(infinite || expanded ? allItems : items.slice(0, 14)).map((media, index) => <div key={key(media)} ref={index === 14 ? moreStart : index === Math.min(13, items.length - 1) ? collapsedEnd : undefined}><MediaCard media={media} saved={saved.has(key(media))} onSave={() => onSave(media)} onLineup={() => onLineup(media)} returnTo={returnTo} /></div>)}
         </div>
         {infinite && hasMore && <div ref={loadSentinel} className="mt-8 flex h-10 items-center justify-center text-[11px] text-muted" aria-live="polite">{loadError ? <button className="cursor-pointer border-b border-white/35 pb-1 font-semibold hover:border-pulse hover:text-white" onClick={() => void loadPage(page + 1)}>Couldn’t load more · Retry</button> : loadingMore ? "Loading more…" : ""}</div>}
         {!infinite && expanded && <div className="mt-10 flex h-5 justify-center"><button className="cursor-pointer border-b border-white/35 pb-1 text-[11px] font-semibold text-[#c7c1bb] hover:border-pulse hover:text-white disabled:opacity-50" onClick={viewLess} disabled={collapsing} aria-expanded={true}>View less</button></div>}
@@ -253,7 +253,7 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [discoverQuery, hasFilters]);
 
-  useEffect(() => {
+  const explorePath = useMemo(() => {
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
     if (mediaType !== "all") params.set("type", mediaType);
@@ -266,8 +266,10 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
     if (runtimeMax) params.set("runtimeMax", String(runtimeMax));
     if (region !== "IN") params.set("region", region);
     if (sort !== "popularity.desc") params.set("sort", sort);
-    window.history.replaceState(null, "", `/explore${params.size ? `?${params}` : ""}`);
+    return `/explore${params.size ? `?${params}` : ""}`;
   }, [genreIds, language, mediaType, providerIds, query, region, runtimeMax, runtimeMin, sort, yearMax, yearMin]);
+
+  useEffect(() => window.history.replaceState(null, "", explorePath), [explorePath]);
 
   function clearFilters() {
     setGenreIds([]);
@@ -364,13 +366,13 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
         </div>
       </header>
 
-      {discoveryItems.length > 0 && <Shelf key={discoveryMoreUrl} title={query ? `Results for “${query.trim()}”` : "Search results"} eyebrow={filtering || searching ? "Searching…" : "Discovery"} items={discoveryItems} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl={discoveryMoreUrl} infinite totalPages={discoveryTotalPages} />}
+      {discoveryItems.length > 0 && <Shelf key={discoveryMoreUrl} title={query ? `Results for “${query.trim()}”` : "Search results"} eyebrow={filtering || searching ? "Searching…" : "Discovery"} items={discoveryItems} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} returnTo={explorePath} moreUrl={discoveryMoreUrl} infinite totalPages={discoveryTotalPages} />}
       {(query.trim().length >= 4 || hasFilters) && !filtering && !searching && discoveryItems.length === 0 && <section className="px-5 py-16 sm:px-[5vw]"><p className="text-[10px] font-semibold tracking-[.16em] text-pulse uppercase">No matches</p><h2 className="mt-2 font-serif text-4xl">Try loosening a filter.</h2></section>}
       {query.trim().length < 4 && !hasFilters && <>
-        <Shelf key={`trending-${mediaType}`} title="Trending this week" eyebrow="Right now" items={typedTrending} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl={`/api/media/discover?trending=true&${typeParam}`} />
-        {recommendations.length > 0 && <Shelf title="Picked from your taste" eyebrow="For you" items={recommendations} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl="/api/recommendations" />}
-        <Shelf title="Movies people can’t stop watching" eyebrow="Popular movies" items={movies} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl="/api/media/discover?type=movie&popular=true" />
-        <Shelf title="One more episode" eyebrow="Popular series" items={shows} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl="/api/media/discover?type=tv&popular=true" />
+        <Shelf key={`trending-${mediaType}`} title="Trending this week" eyebrow="Right now" items={typedTrending} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} returnTo={explorePath} moreUrl={`/api/media/discover?trending=true&${typeParam}`} />
+        {recommendations.length > 0 && <Shelf title="Picked from your taste" eyebrow="For you" items={recommendations} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} returnTo={explorePath} moreUrl="/api/recommendations" />}
+        <Shelf title="Movies people can’t stop watching" eyebrow="Popular movies" items={movies} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} returnTo={explorePath} moreUrl="/api/media/discover?type=movie&popular=true" />
+        <Shelf title="One more episode" eyebrow="Popular series" items={shows} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} returnTo={explorePath} moreUrl="/api/media/discover?type=tv&popular=true" />
       </>}
 
       <dialog ref={lineupDialog} className="m-auto w-[min(560px,calc(100vw-32px))] border border-[#35312e] bg-[#11100f] p-7 text-ink shadow-[0_40px_140px_#000] outline-none sm:p-10" onMouseDown={closeOnBackdrop}>
