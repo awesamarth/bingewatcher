@@ -60,14 +60,14 @@ Exact tools and schemas are **TBD**. Mutations must respect authorization, locks
 - Lineups accept movies, whole TV series, and specific seasons while preserving existing movie data and guarded collaboration behavior; the lineup search modal now uses the same mixed-media search as Explore.
 - Imperative WebMCP tools expose discovery, ratings, regional linked streaming offers, details, recommendations, watchlist, progress, constrained reactions, lineup listing/addition, and lineup operations—including optional-reason Not for me—through the same backend domain paths as the UI. `search_media` and `discover_media` always visibly open Explore with canonical, shareable filter URLs; `open_watchlist` and `open_lineup` expose explicit UI navigation. Lineup creation is explicitly empty unless the user asks to populate it, and add/replace rationales are optional rather than agent-invented copy.
 - Unit tests, lint, typecheck, production build, and manual API/security smoke tests pass.
-- Render deployment configuration is complete and container-tested with a persistent SQLite volume and database-aware health check. Service provisioning remains; permanent account auth and real WebMCP host testing remain.
+- Render deployment configuration is complete and container-tested with a persistent SQLite volume and database-aware health check. A temporary free deployment is live at `https://bingewatcher-tkfe.onrender.com` and passes health, page, TMDB search, authenticated mutation, isolation, and deletion smoke tests. Persistent-disk provisioning remains blocked on Render billing verification; permanent account auth and real WebMCP host testing remain.
 
 ## Next
 
 1. Complete manual visual/interaction QA for Explore, title/season pages, watchlist, progress, recommendations, and mixed-media lineups.
 2. Test all registered tools in ChatGPT's in-app browser or WebMCP-enabled Chrome.
 3. Add focused automated tests for library persistence, episode-derived completion, and mixed-media lineup guards.
-4. Provision the Render service after payment information is enabled, smoke-test the live deployment, and prepare submission assets.
+4. Add payment information in Render, upgrade the live service to paid compute, attach `/var/data`, switch `DATABASE_PATH` to `/var/data/bingewatcher.db`, then rerun persistence smoke tests and prepare submission assets.
 
 ## Session handoff checklist
 
