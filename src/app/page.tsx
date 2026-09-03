@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { ArrowDown, LockKeyhole, MousePointer2 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { CreateProgramForm } from "@/components/create-program-form";
@@ -19,7 +20,8 @@ const posterPositions = [
 ];
 
 export default async function Home() {
-  const movies = await trendingMovies().catch(() => []);
+  await connection();
+  const movies = await trendingMovies().catch((error) => { console.error("Could not load homepage posters", error); return []; });
 
   return (
     <main className="min-h-screen overflow-hidden bg-canvas">

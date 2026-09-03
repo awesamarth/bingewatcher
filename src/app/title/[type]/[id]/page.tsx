@@ -35,7 +35,7 @@ export default async function TitlePage({ params, searchParams }: { params: Prom
       <WebMCPTools surface="explore" />
       <SiteNav active="explore" />
       <header className="relative flex min-h-[78svh] items-end overflow-x-clip px-5 pb-14 sm:px-[8vw] sm:pb-20">
-        {media.backdropPath && <Image className="object-cover" src={`https://image.tmdb.org/t/p/original${media.backdropPath}`} alt="" fill priority sizes="100vw" />}
+        {media.backdropPath && <Image className="object-cover" src={`https://image.tmdb.org/t/p/w1280${media.backdropPath}`} alt="" fill priority sizes="100vw" />}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,#070707_5%,rgba(7,7,7,.9)_40%,rgba(7,7,7,.2)),linear-gradient(0deg,#070707_2%,transparent_50%,rgba(0,0,0,.45))]" />
         <div className="relative z-2 max-w-210">
           <TitleBackLink destination={destination} />
