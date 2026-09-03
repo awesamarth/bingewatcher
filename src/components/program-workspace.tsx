@@ -416,7 +416,7 @@ export function ProgramWorkspace({ programId }: { programId: string }) {
       )}
 
       <section className="mx-auto max-w-275 px-4 pb-20 sm:px-7.5 sm:pb-30" aria-label="Ordered movie lineup">
-        <div className="flex justify-between border-b border-line pb-3 text-[10px] tracking-[.13em] text-[#69645f] uppercase"><span>Sequence</span><span>Drag to reorder</span></div>
+        <div className="flex justify-between border-b border-line pb-3 text-[10px] tracking-[.13em] text-[#69645f] uppercase"><span>Sequence</span>{!readOnly && <span>Drag to reorder</span>}</div>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
           <SortableContext items={program.items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
             {program.items.map((item, index) => (
