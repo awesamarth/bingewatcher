@@ -1,26 +1,44 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist);
+  --font-serif: var(--font-editorial);
+  --color-ink: #f3efe9;
+  --color-muted: #98928d;
+  --color-faint: #5c5753;
+  --color-canvas: #070707;
+  --color-surface: #10100f;
+  --color-raised: #171615;
+  --color-line: #292725;
+  --color-pulse: #e3261f;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #5b534d transparent; }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: #5b534d; background-clip: padding-box; }
+  *::-webkit-scrollbar-thumb:hover { background: #e3261f; }
+  html { background: #070707; color: #f3efe9; }
+  body { margin: 0; min-height: 100vh; background: #070707; color: #f3efe9; font-family: var(--font-geist), sans-serif; }
+  button, input, textarea, select { font: inherit; }
+  input[type="checkbox"] { appearance: none; display: grid; cursor: pointer; place-content: center; border: 1px solid #615a54; border-radius: 2px; background: #090908; }
+  input[type="checkbox"]::before { width: 7px; height: 4px; content: ""; border-bottom: 1.5px solid white; border-left: 1.5px solid white; transform: translateY(-1px) rotate(-45deg) scale(0); transition: transform 120ms ease; }
+  input[type="checkbox"]:checked { border-color: #e3261f; background: #e3261f; }
+  input[type="checkbox"]:checked::before { transform: translateY(-1px) rotate(-45deg) scale(1); }
+  input[type="checkbox"]:focus-visible { outline: 2px solid #ff8f89; outline-offset: 2px; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  button { color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: #e3261f; color: white; }
+  dialog::backdrop { background: rgb(0 0 0 / 82%); backdrop-filter: blur(7px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

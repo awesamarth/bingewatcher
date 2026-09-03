@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BingeWatcher
 
-## Getting Started
+**Build the night, together.**
 
-First, run the development server:
+BingeWatcher is a shared discovery and planning app for people and their browser agents. Explore movies and TV, keep a default watchlist, track episode-level progress, and build ordered lineups containing movies, whole series, or specific seasons.
+
+## Run locally
+
+Requirements: Bun and a [TMDB API Read Access Token](https://www.themoviedb.org/settings/api). A [Streaming Availability API](https://www.movieofthenight.com/about/api) key is optional for linked provider offers.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+cp .env.example .env.local
+# Add TMDB_READ_API_KEY and optionally STREAMING_AVAILABILITY_API_KEY to .env.local
+bun install
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). SQLite data is created at `data/bingewatcher.db` by default.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy to Render
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The included `Dockerfile` and `render.yaml` run BingeWatcher as a single Render web service with a persistent 1 GB disk in Singapore.
 
-## Learn More
+1. Create the service from `render.yaml`.
+2. Set `TMDB_READ_API_KEY` and optionally `STREAMING_AVAILABILITY_API_KEY` in Render.
+3. Keep the disk mounted at `/var/data`; production data is stored at `/var/data/bingewatcher.db`.
+4. Use `/api/health` as the health-check path.
 
-To learn more about Next.js, take a look at the following resources:
+SQLite requires one service instance. Move to a network database before enabling multiple instances.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Check the project
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+bun test
+bun run lint
+bun run typecheck
+bun run build
+```
 
-## Deploy on Vercel
+## Test WebMCP
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Use ChatGPT's in-app browser, or enable `chrome://flags/#enable-webmcp-testing` in a compatible Chrome build. Open BingeWatcher and inspect the page's available site tools.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Across Explore and title pages an agent can search/discover media, read details and recommendations, manage the watchlist, update watch progress and reactions, list lineups, and add discoveries directly to one. Inside a lineup it can read live state, add/replace/remove/reorder picks, update preferences, validate the result, and record watch state while respecting locks and human decisions.
+
+Tools are registered with the imperative `document.modelContext.registerTool()` API. They call the same authenticated backend operations as the human interface; all locks, revisions, access tokens, and constraints are enforced server-side.
+
+## Data and access
+
+- Anonymous visitors receive an HTTP-only session cookie.
+- New lineups receive an unguessable edit/resume token.
+- Sharing creates a separate read-only bearer URL.
+- TMDB and streaming-availability credentials remain server-side.
+
+Local development uses `data/bingewatcher.db`; the Render deployment stores the same SQLite database on its persistent disk.
+
+## Attribution
+
+This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+## License
+
+[MIT](LICENSE)

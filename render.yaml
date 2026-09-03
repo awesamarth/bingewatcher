@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: bingewatcher
+    runtime: docker
+    plan: 0.5c-512mb
+    region: singapore
+    autoDeployTrigger: commit
+    healthCheckPath: /api/health
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/bingewatcher.db
+      - key: TMDB_READ_API_KEY
+        sync: false
+      - key: STREAMING_AVAILABILITY_API_KEY
+        sync: false
+    disk:
+      name: bingewatcher-data
+      mountPath: /var/data
+      sizeGB: 1
