@@ -54,7 +54,7 @@ function MediaCard({ media, saved, onSave, onLineup }: { media: MediaSearchResul
   );
 }
 
-function Shelf({ title, eyebrow, items, saved, onSave, onLineup, id, moreUrl, infinite = false, totalPages = 1 }: { title: string; eyebrow: string; items: MediaSearchResult[]; saved: Set<string>; onSave: (media: MediaSearchResult) => void; onLineup: (media: MediaSearchResult) => void; id?: string; moreUrl?: string; infinite?: boolean; totalPages?: number }) {
+function Shelf({ title, eyebrow, items, saved, onSave, onLineup, moreUrl, infinite = false, totalPages = 1 }: { title: string; eyebrow: string; items: MediaSearchResult[]; saved: Set<string>; onSave: (media: MediaSearchResult) => void; onLineup: (media: MediaSearchResult) => void; moreUrl?: string; infinite?: boolean; totalPages?: number }) {
   const [expanded, setExpanded] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
@@ -137,7 +137,7 @@ function Shelf({ title, eyebrow, items, saved, onSave, onLineup, id, moreUrl, in
   }
 
   return (
-    <section className="scroll-mt-20 [overflow-anchor:none] px-5 py-10 sm:px-[5vw] sm:py-14" id={id}>
+    <section className="scroll-mt-20 [overflow-anchor:none] px-5 py-10 sm:px-[5vw] sm:py-14">
       <div className="mb-7 flex items-end justify-between gap-5">
         <div><p className="mb-2 text-[10px] font-semibold tracking-[.16em] text-pulse uppercase">{eyebrow}</p><h2 className="font-serif text-4xl tracking-[-.035em] sm:text-5xl">{title}</h2></div>
         {!infinite && !expanded && (moreUrl || items.length > 14) && <button className="mb-1 shrink-0 cursor-pointer border-b border-white/35 pb-1 text-[11px] font-semibold text-[#c7c1bb] hover:border-pulse hover:text-white disabled:opacity-50" onClick={viewMore} disabled={loadingMore} aria-expanded={false}>{loadingMore ? "Loading…" : "View more"}</button>}
@@ -375,7 +375,6 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
         {recommendations.length > 0 && <Shelf title="Picked from your taste" eyebrow="For you" items={recommendations} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl="/api/recommendations" />}
         <Shelf title="Movies people can’t stop watching" eyebrow="Popular movies" items={movies} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl="/api/media/discover?type=movie&popular=true" />
         <Shelf title="One more episode" eyebrow="Popular series" items={shows} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} moreUrl="/api/media/discover?type=tv&popular=true" />
-        {watchlist.length > 0 ? <Shelf id="watchlist" title="Your watchlist" eyebrow="Saved for later" items={watchlist} saved={saved} onSave={toggleWatchlist} onLineup={openLineups} /> : <section id="watchlist" className="scroll-mt-20 border-t border-line px-5 py-14 sm:px-[5vw]"><p className="text-[10px] font-semibold tracking-[.16em] text-pulse uppercase">Saved for later</p><h2 className="mt-2 font-serif text-5xl">Your watchlist</h2><p className="mt-4 text-sm text-muted">Save anything from Explore and it will wait here.</p></section>}
       </>}
 
       <dialog ref={lineupDialog} className="m-auto w-[min(560px,calc(100vw-32px))] border border-[#35312e] bg-[#11100f] p-7 text-ink shadow-[0_40px_140px_#000] outline-none sm:p-10" onMouseDown={closeOnBackdrop}>

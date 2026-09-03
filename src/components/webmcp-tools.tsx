@@ -111,10 +111,10 @@ export function WebMCPTools({ programId }: { programId?: string; surface?: "expl
     });
     register({
       name: "open_watchlist",
-      description: "Open the user's visible watchlist in Explore.",
+      description: "Open the user's dedicated visible watchlist page.",
       inputSchema: objectSchema({}),
       annotations: { readOnlyHint: true },
-      execute: () => { router.push("/explore#watchlist"); return JSON.stringify({ opened: true, url: "/explore#watchlist" }); },
+      execute: () => { router.push("/watchlist"); return JSON.stringify({ opened: true, url: "/watchlist" }); },
     });
     register({
       name: "add_to_watchlist",
