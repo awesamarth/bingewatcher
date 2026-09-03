@@ -4,6 +4,8 @@
 
 BingeWatcher is a shared discovery and planning app for people and their browser agents. Explore movies and TV, keep a default watchlist, track episode-level progress, and build ordered lineups containing movies, whole series, or specific seasons.
 
+Live: [bingewatcher-prod.onrender.com](https://bingewatcher-prod.onrender.com)
+
 ## Run locally
 
 Requirements: Bun and a [TMDB API Read Access Token](https://www.themoviedb.org/settings/api). A [Streaming Availability API](https://www.movieofthenight.com/about/api) key is optional for linked provider offers.

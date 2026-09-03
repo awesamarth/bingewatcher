@@ -60,14 +60,14 @@ Exact tools and schemas are **TBD**. Mutations must respect authorization, locks
 - Lineups accept movies, whole TV series, and specific seasons while preserving existing movie data and guarded collaboration behavior; the lineup search modal now uses the same mixed-media search as Explore.
 - Imperative WebMCP tools expose discovery, ratings, regional linked streaming offers, details, recommendations, watchlist, progress, constrained reactions, lineup listing/addition, and lineup operations—including optional-reason Not for me—through the same backend domain paths as the UI. `search_media` and `discover_media` always visibly open Explore with canonical, shareable filter URLs; `open_watchlist` and `open_lineup` expose explicit UI navigation. Lineup creation is explicitly empty unless the user asks to populate it, and add/replace rationales are optional rather than agent-invented copy.
 - Unit tests, lint, typecheck, production build, and manual API/security smoke tests pass.
-- Render deployment configuration is complete and container-tested with a persistent SQLite volume and database-aware health check. A temporary free deployment is live at `https://bingewatcher-tkfe.onrender.com` and passes health, page, TMDB search, authenticated mutation, isolation, and deletion smoke tests. Persistent-disk provisioning remains blocked on Render billing verification; permanent account auth and real WebMCP host testing remain.
+- Production is live at `https://bingewatcher-prod.onrender.com` as a paid single-instance Render service in Singapore with a 1 GB persistent disk at `/var/data`, Docker/Node runtime, Bun installs, and a database-aware health check. Health, page, Explore, TMDB search, secure anonymous session, authorization isolation, mutation, deletion, and persistence-across-restart smoke tests pass. Permanent account auth and real WebMCP host testing remain.
 
 ## Next
 
 1. Complete manual visual/interaction QA for Explore, title/season pages, watchlist, progress, recommendations, and mixed-media lineups.
 2. Test all registered tools in ChatGPT's in-app browser or WebMCP-enabled Chrome.
 3. Add focused automated tests for library persistence, episode-derived completion, and mixed-media lineup guards.
-4. Add payment information in Render, upgrade the live service to paid compute, attach `/var/data`, switch `DATABASE_PATH` to `/var/data/bingewatcher.db`, then rerun persistence smoke tests and prepare submission assets.
+4. Test all WebMCP tools against the live Render origin, then prepare submission assets.
 
 ## Session handoff checklist
 
@@ -108,8 +108,7 @@ Before ending meaningful work, update:
 
 ## Risks / blockers
 
-- Render service provisioning currently returns `need_payment_info`; the workspace must add payment information before the paid compute plan and persistent disk can be created. Promotional credits do not bypass this requirement.
-- The selected Render persistent SQLite deployment is intentionally single-instance; move to a network database before horizontal scaling.
+- The selected Render persistent SQLite deployment is intentionally single-instance and has brief restart/deploy downtime; move to a network database before horizontal scaling.
 - Permanent email/Google/passkey auth needs provider credentials and production origin configuration.
 - WebMCP implementation compiles against the current draft API but still needs an end-to-end test in an actual WebMCP host.
 - The current Streaming Availability API free plan is limited to 1,000 requests per month; 24-hour per-title/region caching limits usage but production traffic will require a larger quota.
