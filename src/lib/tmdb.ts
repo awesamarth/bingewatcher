@@ -1,5 +1,6 @@
 import "server-only";
 
+import { matchesSearchFilters } from "./discovery";
 import type { DiscoverFilters, Episode, Media, MediaSearchResult, MediaType, Movie, MovieSearchResult, SeasonSummary } from "./types";
 
 const API = "https://api.themoviedb.org/3";
@@ -18,10 +19,12 @@ type TmdbMedia = {
   original_language: string;
   vote_average?: number;
   vote_count?: number;
+  genre_ids?: number[];
 };
 
 type TmdbVideo = { key: string; site: string; type: string; official: boolean };
-type TmdbProviderResults = Record<string, { flatrate?: { provider_name: string }[]; rent?: { provider_name: string }[] }>;
+type TmdbProvider = { provider_id: number; provider_name: string };
+type TmdbProviderResults = Record<string, { flatrate?: TmdbProvider[]; rent?: TmdbProvider[]; buy?: TmdbProvider[]; free?: TmdbProvider[]; ads?: TmdbProvider[] }>;
 type TmdbSeasonSummary = { season_number: number; name: string; episode_count: number; air_date: string | null; poster_path: string | null };
 type TmdbEpisode = { episode_number: number; name: string; overview: string; runtime: number | null; air_date: string | null; still_path: string | null };
 
@@ -31,7 +34,7 @@ type TmdbDetails = TmdbMedia & {
   number_of_episodes?: number;
   number_of_seasons?: number;
   seasons?: TmdbSeasonSummary[];
-  genres: { name: string }[];
+  genres: { id: number; name: string }[];
   videos?: { results: TmdbVideo[] };
   "watch/providers"?: { results: TmdbProviderResults };
 };
@@ -105,14 +108,29 @@ function trailer(videos: TmdbVideo[] = []) {
     ?? null;
 }
 
-export async function searchMediaTitles(query: string, mediaType?: MediaType, page = 1) {
+export async function searchMediaTitlesFiltered(query: string, filters: DiscoverFilters = {}) {
+  const { mediaType, page = 1 } = filters;
   const params = new URLSearchParams({ query, include_adult: "false", language: "en-US", page: String(page) });
   const endpoint = mediaType ? `/search/${mediaType}` : "/search/multi";
   const data = await tmdb<{ results: TmdbMedia[]; total_pages: number }>(`${endpoint}?${params}`, 300);
-  return {
-    results: data.results.filter((item) => item.media_type !== "person").map((item) => searchMedia(item, mediaType)),
-    totalPages: data.total_pages,
-  };
+  const needsDetails = Boolean(filters.providerIds?.length || filters.runtimeMin || filters.runtimeMax);
+  // ponytail: TMDB has no combined text-search/filter endpoint; filter each search page and scan more pages only if false-empty pages become common.
+  const matches = await Promise.all(data.results.filter((item) => item.media_type !== "person").map(async (item) => {
+    const result = searchMedia(item, mediaType);
+    const details = needsDetails ? await tmdb<TmdbDetails>(`/${result.mediaType}/${result.tmdbId}?append_to_response=watch/providers&language=en-US`, 86400) : null;
+    const offers = details?.["watch/providers"]?.results[(filters.region ?? "IN").toUpperCase()];
+    const providerIds = offers ? [...(offers.flatrate ?? []), ...(offers.rent ?? []), ...(offers.buy ?? []), ...(offers.free ?? []), ...(offers.ads ?? [])].map((provider) => provider.provider_id) : [];
+    const runtime = details ? result.mediaType === "movie" ? details.runtime ?? null : details.episode_run_time?.[0] ?? null : null;
+    return matchesSearchFilters({ mediaType: result.mediaType, genreIds: item.genre_ids ?? details?.genres.map((genre) => genre.id) ?? [], providerIds, originalLanguage: result.originalLanguage, year: result.year, runtime }, filters) ? result : null;
+  }));
+  const results = matches.filter((item): item is MediaSearchResult => item !== null);
+  if (filters.sort === "vote_average.desc") results.sort((a, b) => (b.voteAverage ?? -1) - (a.voteAverage ?? -1));
+  if (filters.sort === "date.desc") results.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+  return { results, totalPages: data.total_pages };
+}
+
+export async function searchMediaTitles(query: string, mediaType?: MediaType, page = 1) {
+  return searchMediaTitlesFiltered(query, { mediaType, page });
 }
 
 export async function trendingMedia(mediaType?: MediaType, page = 1): Promise<MediaSearchResult[]> {

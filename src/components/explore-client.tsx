@@ -201,26 +201,6 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
     return () => window.removeEventListener("bingewatcher:library-refresh", refresh);
   }, []);
 
-  useEffect(() => {
-    const term = query.trim();
-    if (term.length < 4) return;
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setSearching(true);
-      try {
-        const type = mediaType === "all" ? "" : `&type=${mediaType}`;
-        const result = await json<{ results: MediaSearchResult[]; totalPages: number }>(await fetch(`/api/media/search?q=${encodeURIComponent(term)}${type}`, { signal: controller.signal }));
-        setSearchResults(result.results);
-        setSearchTotalPages(result.totalPages);
-      } catch {
-        if (!controller.signal.aborted) { setSearchResults([]); setSearchTotalPages(1); }
-      } finally {
-        if (!controller.signal.aborted) setSearching(false);
-      }
-    }, 350);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [query, mediaType]);
-
   const hasFilters = genreIds.length > 0 || providerIds.length > 0 || !!language || !!yearMin || !!yearMax || !!runtimeMin || !!runtimeMax || sort !== "popularity.desc";
   const discoverQuery = useMemo(() => {
     const params = new URLSearchParams({ region, sort });
@@ -234,6 +214,25 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
     if (runtimeMax) params.set("runtimeMax", String(runtimeMax));
     return params.toString();
   }, [genreIds, language, mediaType, providerIds, region, runtimeMax, runtimeMin, sort, yearMax, yearMin]);
+
+  useEffect(() => {
+    const term = query.trim();
+    if (term.length < 4) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const result = await json<{ results: MediaSearchResult[]; totalPages: number }>(await fetch(`/api/media/search?q=${encodeURIComponent(term)}&${discoverQuery}`, { signal: controller.signal }));
+        setSearchResults(result.results);
+        setSearchTotalPages(result.totalPages);
+      } catch {
+        if (!controller.signal.aborted) { setSearchResults([]); setSearchTotalPages(1); }
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 350);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [discoverQuery, query]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -257,18 +256,16 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
   useEffect(() => {
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
-    else {
-      if (mediaType !== "all") params.set("type", mediaType);
-      if (genreIds.length) params.set("genres", genreIds.join(","));
-      if (providerIds.length) params.set("providers", providerIds.join(","));
-      if (language) params.set("language", language);
-      if (yearMin) params.set("yearMin", String(yearMin));
-      if (yearMax) params.set("yearMax", String(yearMax));
-      if (runtimeMin) params.set("runtimeMin", String(runtimeMin));
-      if (runtimeMax) params.set("runtimeMax", String(runtimeMax));
-      if (region !== "IN") params.set("region", region);
-      if (sort !== "popularity.desc") params.set("sort", sort);
-    }
+    if (mediaType !== "all") params.set("type", mediaType);
+    if (genreIds.length) params.set("genres", genreIds.join(","));
+    if (providerIds.length) params.set("providers", providerIds.join(","));
+    if (language) params.set("language", language);
+    if (yearMin) params.set("yearMin", String(yearMin));
+    if (yearMax) params.set("yearMax", String(yearMax));
+    if (runtimeMin) params.set("runtimeMin", String(runtimeMin));
+    if (runtimeMax) params.set("runtimeMax", String(runtimeMax));
+    if (region !== "IN") params.set("region", region);
+    if (sort !== "popularity.desc") params.set("sort", sort);
     window.history.replaceState(null, "", `/explore${params.size ? `?${params}` : ""}`);
   }, [genreIds, language, mediaType, providerIds, query, region, runtimeMax, runtimeMin, sort, yearMax, yearMin]);
 
@@ -284,7 +281,6 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
   }
 
   function toggleFilter(value: number, selected: number[], update: (values: number[]) => void) {
-    setQuery("");
     update(selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value]);
   }
 
@@ -341,7 +337,7 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
   const discoveryItems = query.trim().length >= 4 ? searchResults : hasFilters ? filteredResults : [];
   const discoveryTotalPages = query.trim().length >= 4 ? searchTotalPages : filteredTotalPages;
   const typeParam = mediaType === "all" ? "" : `type=${mediaType}&`;
-  const discoveryMoreUrl = query.trim().length >= 4 ? `/api/media/search?q=${encodeURIComponent(query.trim())}&${typeParam}` : hasFilters ? `/api/media/discover?${discoverQuery}` : undefined;
+  const discoveryMoreUrl = query.trim().length >= 4 ? `/api/media/search?q=${encodeURIComponent(query.trim())}&${discoverQuery}` : hasFilters ? `/api/media/discover?${discoverQuery}` : undefined;
   const filterCount = genreIds.length + providerIds.length + Number(!!language) + Number(!!yearMin || !!yearMax) + Number(!!runtimeMin || !!runtimeMax) + Number(sort !== "popularity.desc");
 
   return (
@@ -351,18 +347,18 @@ export function ExploreClient({ trending, trendingMovies, trendingShows, movies,
         <div className="relative mx-auto max-w-360">
           <p className="mb-4 text-[11px] font-semibold tracking-[.18em] text-pulse uppercase">Find what pulls you in</p>
           <h1 className="max-w-230 font-serif text-[clamp(52px,9vw,128px)] leading-[.86] tracking-[-.065em] sm:leading-[.82]">Explore your<span className="hidden sm:inline"> next</span><br /><span className="sm:hidden">next </span>obsession.</h1>
-          <div className="mt-10 grid max-w-220 grid-cols-[28px_1fr_auto] items-center border-b border-[#5b544e] py-3"><Search size={19} /><input className="min-w-0 bg-transparent py-2 text-base text-white outline-none sm:text-lg" value={query} onChange={(event) => { const value = event.target.value; if (!query && value) clearFilters(); setQuery(value); if (value.trim().length < 4) setSearchResults([]); }} placeholder="Search by title…" aria-label="Search movies and shows by title" /><span aria-live="polite" className="text-[10px] text-muted">{searching ? "Searching…" : query.trim().length > 0 && query.trim().length < 4 ? "Type 4 characters" : ""}</span></div>
+          <div className="mt-10 grid max-w-220 grid-cols-[28px_1fr_auto] items-center border-b border-[#5b544e] py-3"><Search size={19} /><input className="min-w-0 bg-transparent py-2 text-base text-white outline-none sm:text-lg" value={query} onChange={(event) => { const value = event.target.value; setQuery(value); if (value.trim().length < 4) setSearchResults([]); }} placeholder="Search by title…" aria-label="Search movies and shows by title" /><span aria-live="polite" className="text-[10px] text-muted">{searching ? "Searching…" : query.trim().length > 0 && query.trim().length < 4 ? "Type 4 characters" : ""}</span></div>
           <div className="mt-6 flex flex-wrap gap-2">
             {(["all", "movie", "tv"] as const).map((type) => <button key={type} className={`cursor-pointer border px-4 py-2 text-[10px] font-semibold tracking-wider uppercase ${mediaType === type ? "border-pulse bg-[#2a0d0b] text-[#ff9b94]" : "border-line text-muted hover:border-white/40"}`} onClick={() => setMediaType(type)}>{type === "all" ? "All" : type === "movie" ? "Movies" : "TV shows"}</button>)}
           </div>
           <div className="mt-5 flex max-w-290 flex-wrap gap-2">
             <FilterMenu label="Genres" count={genreIds.length}><div className="-mr-2 max-h-72 space-y-1 overflow-y-auto pr-3">{genreOptions.map((genre) => <label key={genre.id} className="flex cursor-pointer items-center justify-between px-1.5 py-1.5 text-[13px] text-[#c7c1bb] hover:bg-white/5 hover:text-white"><span>{genre.name}</span><input className="size-3.5 accent-[#e63b33]" type="checkbox" checked={genreIds.includes(genre.id)} onChange={() => toggleFilter(genre.id, genreIds, setGenreIds)} /></label>)}</div></FilterMenu>
             <FilterMenu label="Streaming on" count={providerIds.length}><input className={`${dropdownInputClass} mb-3 w-full`} value={providerSearch} onChange={(event) => setProviderSearch(event.target.value)} placeholder="Find a service…" aria-label="Find a streaming service" /><div className="-mr-2 max-h-72 space-y-1 overflow-y-auto pr-3">{providerOptions.filter((provider) => provider.name.toLowerCase().includes(providerSearch.toLowerCase())).map((provider) => <label key={provider.id} className="flex cursor-pointer items-center justify-between px-1.5 py-2 text-[13px] text-[#c7c1bb] hover:bg-white/5 hover:text-white"><span>{provider.name}</span><input className="size-3.5 accent-[#e63b33]" type="checkbox" checked={providerIds.includes(provider.id)} onChange={() => toggleFilter(provider.id, providerIds, setProviderIds)} /></label>)}</div></FilterMenu>
-            <SelectMenu value={language} options={languages.map(([value, label]) => ({ value, label }))} onChange={(value) => { setQuery(""); setLanguage(value); }} ariaLabel="Original language" />
-            <FilterMenu label="Release years" count={Number(!!yearMin || !!yearMax)}><div className="grid grid-cols-2 gap-3"><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">From<input className={dropdownInputClass} type="number" min="1870" max="2100" value={yearMin ?? ""} placeholder="1990" onChange={(event) => { setQuery(""); setYearMin(event.target.value ? Number(event.target.value) : undefined); }} /></label><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">To<input className={dropdownInputClass} type="number" min="1870" max="2100" value={yearMax ?? ""} placeholder="2000" onChange={(event) => { setQuery(""); setYearMax(event.target.value ? Number(event.target.value) : undefined); }} /></label></div></FilterMenu>
-            <FilterMenu label="Runtime" count={Number(!!runtimeMin || !!runtimeMax)}><div className="grid grid-cols-2 gap-3"><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">Min<input className={dropdownInputClass} type="number" min="1" max="1000" value={runtimeMin ?? ""} placeholder="60" onChange={(event) => { setQuery(""); setRuntimeMin(event.target.value ? Number(event.target.value) : undefined); }} /></label><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">Max<input className={dropdownInputClass} type="number" min="1" max="1000" value={runtimeMax ?? ""} placeholder="120" onChange={(event) => { setQuery(""); setRuntimeMax(event.target.value ? Number(event.target.value) : undefined); }} /></label><p className="col-span-2 text-[10px] text-faint">Minutes per movie or episode.</p></div></FilterMenu>
+            <SelectMenu value={language} options={languages.map(([value, label]) => ({ value, label }))} onChange={setLanguage} ariaLabel="Original language" />
+            <FilterMenu label="Release years" count={Number(!!yearMin || !!yearMax)}><div className="grid grid-cols-2 gap-3"><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">From<input className={dropdownInputClass} type="number" min="1870" max="2100" value={yearMin ?? ""} placeholder="1990" onChange={(event) => setYearMin(event.target.value ? Number(event.target.value) : undefined)} /></label><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">To<input className={dropdownInputClass} type="number" min="1870" max="2100" value={yearMax ?? ""} placeholder="2000" onChange={(event) => setYearMax(event.target.value ? Number(event.target.value) : undefined)} /></label></div></FilterMenu>
+            <FilterMenu label="Runtime" count={Number(!!runtimeMin || !!runtimeMax)}><div className="grid grid-cols-2 gap-3"><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">Min<input className={dropdownInputClass} type="number" min="1" max="1000" value={runtimeMin ?? ""} placeholder="60" onChange={(event) => setRuntimeMin(event.target.value ? Number(event.target.value) : undefined)} /></label><label className="grid gap-2 text-[10px] tracking-wider text-muted uppercase">Max<input className={dropdownInputClass} type="number" min="1" max="1000" value={runtimeMax ?? ""} placeholder="120" onChange={(event) => setRuntimeMax(event.target.value ? Number(event.target.value) : undefined)} /></label><p className="col-span-2 text-[10px] text-faint">Minutes per movie or episode.</p></div></FilterMenu>
             <SelectMenu value={region} options={regions.map(([value, label]) => ({ value, label }))} onChange={(value) => { setRegion(value); setProviderIds([]); }} ariaLabel="Streaming region" />
-            <SelectMenu value={sort} options={[{ value: "popularity.desc", label: "Most popular" }, { value: "vote_average.desc", label: "Highest rated" }, { value: "date.desc", label: "Newest first" }]} onChange={(value) => { setQuery(""); setSort(value); }} ariaLabel="Sort discoveries" />
+            <SelectMenu value={sort} options={[{ value: "popularity.desc", label: "Most popular" }, { value: "vote_average.desc", label: "Highest rated" }, { value: "date.desc", label: "Newest first" }]} onChange={setSort} ariaLabel="Sort discoveries" />
           </div>
           {filterCount > 0 && <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] text-[#aaa39d]"><span>{filterCount} filter{filterCount === 1 ? "" : "s"} active</span>{genreIds.map((id) => <button key={`genre-${id}`} className="cursor-pointer border border-line px-2 py-1 hover:border-pulse hover:text-white" onClick={() => setGenreIds((values) => values.filter((value) => value !== id))}>{genreOptions.find((genre) => genre.id === id)?.name ?? "Genre"} ×</button>)}{providerIds.map((id) => <button key={`provider-${id}`} className="cursor-pointer border border-line px-2 py-1 hover:border-pulse hover:text-white" onClick={() => setProviderIds((values) => values.filter((value) => value !== id))}>{providerOptions.find((provider) => provider.id === id)?.name ?? "Provider"} ×</button>)}{language && <button className="cursor-pointer border border-line px-2 py-1 hover:border-pulse hover:text-white" onClick={() => setLanguage("")}>{languages.find(([code]) => code === language)?.[1]} ×</button>}{(yearMin || yearMax) && <button className="cursor-pointer border border-line px-2 py-1 hover:border-pulse hover:text-white" onClick={() => { setYearMin(undefined); setYearMax(undefined); }}>{yearMin ?? "Any"}–{yearMax ?? "Now"} ×</button>}{(runtimeMin || runtimeMax) && <button className="cursor-pointer border border-line px-2 py-1 hover:border-pulse hover:text-white" onClick={() => { setRuntimeMin(undefined); setRuntimeMax(undefined); }}>{runtimeMin ?? 0}–{runtimeMax ?? "Any"} min ×</button>}{sort !== "popularity.desc" && <button className="cursor-pointer border border-line px-2 py-1 hover:border-pulse hover:text-white" onClick={() => setSort("popularity.desc")}>{sort === "vote_average.desc" ? "Highest rated" : "Newest first"} ×</button>}<button className="cursor-pointer text-pulse hover:text-[#ff8f89]" onClick={clearFilters}>Clear all</button></div>}
         </div>

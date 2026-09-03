@@ -1,4 +1,26 @@
 import { z } from "zod";
+import type { DiscoverFilters, MediaType } from "./types";
+
+export type SearchFilterCandidate = {
+  mediaType: MediaType;
+  genreIds: number[];
+  providerIds: number[];
+  originalLanguage: string;
+  year: number | null;
+  runtime: number | null;
+};
+
+export function matchesSearchFilters(candidate: SearchFilterCandidate, filters: DiscoverFilters) {
+  const { genreIds = [], providerIds = [], originalLanguage, yearMin, yearMax, runtimeMin, runtimeMax } = filters;
+  return (!filters.mediaType || candidate.mediaType === filters.mediaType)
+    && genreIds.every((id) => candidate.genreIds.includes(id))
+    && (!providerIds.length || providerIds.some((id) => candidate.providerIds.includes(id)))
+    && (!originalLanguage || candidate.originalLanguage === originalLanguage)
+    && (!yearMin || candidate.year !== null && candidate.year >= yearMin)
+    && (!yearMax || candidate.year !== null && candidate.year <= yearMax)
+    && (!runtimeMin || candidate.runtime !== null && candidate.runtime >= runtimeMin)
+    && (!runtimeMax || candidate.runtime !== null && candidate.runtime <= runtimeMax);
+}
 
 export const discoverQuerySchema = z.object({
   type: z.enum(["movie", "tv"]).optional(),

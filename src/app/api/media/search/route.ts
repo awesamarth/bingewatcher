@@ -1,19 +1,28 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { searchMediaTitles } from "@/lib/tmdb";
-
-const typeSchema = z.enum(["movie", "tv"]);
+import { discoverQuerySchema } from "@/lib/discovery";
+import { searchMediaTitlesFiltered } from "@/lib/tmdb";
 
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const query = params.get("q")?.trim() ?? "";
   if (query.length < 2) return NextResponse.json({ error: "Enter at least two characters" }, { status: 400 });
-  const parsedType = params.get("type") ? typeSchema.safeParse(params.get("type")) : null;
-  const page = Number(params.get("page") ?? 1);
-  if (parsedType && !parsedType.success) return NextResponse.json({ error: "Invalid media type" }, { status: 400 });
-  if (!Number.isInteger(page) || page < 1 || page > 20) return NextResponse.json({ error: "Invalid page" }, { status: 400 });
+  const parsed = discoverQuerySchema.safeParse(Object.fromEntries(params));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid search filters" }, { status: 400 });
+  const filters = parsed.data;
   try {
-    const result = await searchMediaTitles(query, parsedType?.data, page);
+    const result = await searchMediaTitlesFiltered(query, {
+      mediaType: filters.type,
+      genreIds: filters.genres?.split(",").map(Number),
+      providerIds: filters.providers?.split(",").map(Number),
+      originalLanguage: filters.language?.toLowerCase(),
+      yearMin: filters.yearMin,
+      yearMax: filters.yearMax,
+      runtimeMin: filters.runtimeMin,
+      runtimeMax: filters.runtimeMax,
+      region: filters.region,
+      sort: filters.sort,
+      page: filters.page,
+    });
     return NextResponse.json({ ...result, totalPages: Math.min(result.totalPages, 20) });
   } catch (error) {
     console.error(error);
